@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Kotlin & Jetpack Compose</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #08080a;
+            --black-2: #0f0f12;
+            --black-3: #16161a;
+            --white: #f2f2f4;
+            --gray: #7a7a8c;
+            --gray-light: #b8b8cc;
+            --c1: #7c6af7;   /* purple - Kotlin */
+            --c2: #f5a623;   /* amber - Compose */
+            --c3: #4ecdc4;   /* teal - Variables */
+            --c4: #ff6b6b;   /* red - Lifecycle */
+            --c5: #a8e063;   /* green - Funciones */
+            --c6: #f7c6e0;   /* pink - Clases */
+            --mono: 'Space Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--black);
+            color: var(--white);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── NOISE TEXTURE ─────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+        }
+
+        /* ── BACKGROUND GLOW ────────────────────────── */
+        .bg-glow {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 15% 20%, rgba(124,106,247,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 30% at 85% 70%, rgba(78,205,196,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 50% at 50% 50%, rgba(245,166,35,0.03) 0%, transparent 60%);
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 80px 80px;
+        }
+
+        /* ── LAYOUT ─────────────────────────────────── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* ── HERO ────────────────────────────────────── */
+        .hero {
+            text-align: center;
+            padding: 5rem 0 4rem;
+            position: relative;
+        }
+
+        .hero__eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(124,106,247,0.4);
+            border-radius: 100px;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--c1);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            background: rgba(124,106,247,0.06);
+            animation: fadeDown 0.8s ease forwards;
+        }
+
+        .hero__eyebrow::before {
+            content: '';
+            width: 6px; height: 6px;
+            background: var(--c1);
+            border-radius: 50%;
+            animation: blink 2s ease infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .hero__title {
+            font-size: clamp(3rem, 7vw, 6rem);
+            font-weight: 800;
+            line-height: 0.95;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            animation: fadeDown 0.9s 0.1s ease both;
+        }
+
+        .hero__title .line-1 { display: block; color: var(--white); }
+        .hero__title .line-2 {
+            display: block;
+            background: linear-gradient(120deg, var(--c1), var(--c2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero__sub {
+            font-size: 1.1rem;
+            color: var(--gray);
+            max-width: 580px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.7;
+            font-weight: 400;
+            animation: fadeDown 0.9s 0.2s ease both;
+        }
+
+        .hero__divider {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c1), transparent);
+            margin: 0 auto;
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── NAV PILLS ───────────────────────────────── */
+        .nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 1.2rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            margin-bottom: 4rem;
+            animation: fadeUp 0.8s 0.3s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav a {
+            padding: 0.45rem 0.9rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--gray-light);
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(.16,1,.3,1);
+            letter-spacing: 0.01em;
+        }
+
+        .nav a:hover { transform: translateY(-2px); }
+        .nav a[data-c="1"]:hover { border-color: var(--c1); color: var(--c1); background: rgba(124,106,247,0.08); }
+        .nav a[data-c="2"]:hover { border-color: var(--c2); color: var(--c2); background: rgba(245,166,35,0.08); }
+        .nav a[data-c="3"]:hover { border-color: var(--c3); color: var(--c3); background: rgba(78,205,196,0.08); }
+        .nav a[data-c="4"]:hover { border-color: var(--c4); color: var(--c4); background: rgba(255,107,107,0.08); }
+        .nav a[data-c="5"]:hover { border-color: var(--c5); color: var(--c5); background: rgba(168,224,99,0.08); }
+        .nav a[data-c="6"]:hover { border-color: var(--c6); color: var(--c6); background: rgba(247,198,224,0.08); }
+
+        /* ── SECTION ─────────────────────────────────── */
+        .section {
+            margin-bottom: 4rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%);
+            overflow: hidden;
+            transition: border-color 0.3s ease, transform 0.3s ease;
+            position: relative;
+        }
+
+        .section:hover {
+            border-color: rgba(255,255,255,0.13);
+            transform: translateY(-3px);
+        }
+
+        .section__stripe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+
+        .section[data-c="1"] .section__stripe { background: linear-gradient(90deg, var(--c1), #b39df7); }
+        .section[data-c="2"] .section__stripe { background: linear-gradient(90deg, var(--c2), #ffd070); }
+        .section[data-c="3"] .section__stripe { background: linear-gradient(90deg, var(--c3), #a0ece8); }
+        .section[data-c="4"] .section__stripe { background: linear-gradient(90deg, var(--c4), #ffb3b3); }
+        .section[data-c="5"] .section__stripe { background: linear-gradient(90deg, var(--c5), #d0f0a0); }
+        .section[data-c="6"] .section__stripe { background: linear-gradient(90deg, var(--c6), #fff0f8); }
+
+        .section__inner { padding: 2.5rem; }
+
+        .section__header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .section__num {
+            width: 46px; height: 46px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            color: var(--black);
+        }
+
+        .section[data-c="1"] .section__num { background: var(--c1); }
+        .section[data-c="2"] .section__num { background: var(--c2); }
+        .section[data-c="3"] .section__num { background: var(--c3); }
+        .section[data-c="4"] .section__num { background: var(--c4); }
+        .section[data-c="5"] .section__num { background: var(--c5); }
+        .section[data-c="6"] .section__num { background: var(--c6); }
+
+        .section__title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .section__lead {
+            color: var(--gray);
+            font-size: 0.93rem;
+            line-height: 1.75;
+            margin-bottom: 2rem;
+            padding: 1rem 1.2rem;
+            background: rgba(255,255,255,0.02);
+            border-left: 3px solid rgba(255,255,255,0.08);
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* ── SUBSECTION ──────────────────────────────── */
+        .sub { margin-bottom: 1.8rem; }
+
+        .sub__title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gray-light);
+            margin-bottom: 1rem;
+            letter-spacing: 0.01em;
+        }
+
+        .sub__title::before {
+            content: '';
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .section[data-c="1"] .sub__title::before { background: var(--c1); }
+        .section[data-c="2"] .sub__title::before { background: var(--c2); }
+        .section[data-c="3"] .sub__title::before { background: var(--c3); }
+        .section[data-c="4"] .sub__title::before { background: var(--c4); }
+        .section[data-c="5"] .sub__title::before { background: var(--c5); }
+        .section[data-c="6"] .sub__title::before { background: var(--c6); }
+
+        /* ── CODE BLOCK ──────────────────────────────── */
+        .code {
+            background: #0a0a0d;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 1.2rem 1.4rem;
+            margin: 0.8rem 0 1.2rem;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code__lang {
+            position: absolute;
+            top: 0.6rem; right: 0.9rem;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .code code {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            line-height: 1.8;
+            color: #c9d1d9;
+            white-space: pre;
+            display: block;
+        }
+
+        .kw  { color: #f8c; }   /* keyword */
+        .fn  { color: #7ec8e3; } /* function */
+        .st  { color: #a8e063; } /* string */
+        .cm  { color: #586069; font-style: italic; } /* comment */
+        .tp  { color: #f0b429; } /* type */
+        .nm  { color: #b392f0; } /* number/name */
+        .an  { color: #f5a623; } /* annotation */
+
+        /* ── CARDS GRID ──────────────────────────────── */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .card {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.9rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.12);
+            transform: translateX(4px);
+        }
+
+        .card__icon {
+            font-size: 1.2rem;
+            width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .card__ttl { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.2rem; }
+        .card__txt { font-size: 0.78rem; color: var(--gray); line-height: 1.5; }
+
+        /* ── INLINE CODE ─────────────────────────────── */
+        ic {
+            font-family: var(--mono);
+            font-size: 0.8em;
+            background: rgba(124,106,247,0.12);
+            color: #b39df7;
+            padding: 0.1em 0.45em;
+            border-radius: 4px;
+            border: 1px solid rgba(124,106,247,0.2);
+        }
+
+        /* ── CALLOUT ─────────────────────────────────── */
+        .callout {
+            display: flex;
+            gap: 0.8rem;
+            padding: 1rem 1.2rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            line-height: 1.65;
+        }
+
+        .callout--warn {
+            background: rgba(245,166,35,0.08);
+            border: 1px solid rgba(245,166,35,0.2);
+            color: #ffd97d;
+        }
+
+        .callout--info {
+            background: rgba(78,205,196,0.08);
+            border: 1px solid rgba(78,205,196,0.2);
+            color: #8ee8e3;
+        }
+
+        .callout--tip {
+            background: rgba(124,106,247,0.08);
+            border: 1px solid rgba(124,106,247,0.2);
+            color: #b39df7;
+        }
+
+        .callout__ico { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+        /* ── LIFECYCLE DIAGRAM ───────────────────────── */
+        .lifecycle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 1.5rem 0;
+        }
+
+        .lc-box {
+            width: 260px;
+            padding: 0.65rem 1.2rem;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-family: var(--mono);
+            position: relative;
+        }
+
+        .lc-box--enter { background: rgba(168,224,99,0.15); border: 1px solid rgba(168,224,99,0.4); color: var(--c5); }
+        .lc-box--compose { background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.4); color: var(--c1); }
+        .lc-box--recompose { background: rgba(78,205,196,0.15); border: 1px solid rgba(78,205,196,0.4); color: var(--c3); }
+        .lc-box--dispose { background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.4); color: var(--c4); }
+        .lc-box--side { background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.3); color: var(--c2); }
+
+        .lc-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 0;
+        }
+
+        .lc-arrow-line {
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+        }
+
+        .lc-arrow-head {
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 7px solid rgba(255,255,255,0.2);
+        }
+
+        .lc-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--gray);
+            margin: 0.2rem 0;
+        }
+
+        /* ── TABLE ───────────────────────────────────── */
+        .tbl-wrap { overflow-x: auto; margin: 1rem 0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.65rem 1rem;
+            background: rgba(255,255,255,0.04);
+            color: var(--gray-light);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--gray-light);
+            line-height: 1.5;
+        }
+
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        td:first-child { font-family: var(--mono); font-size: 0.75rem; color: var(--c3); }
+
+        /* ── TWO-COL ─────────────────────────────────── */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .two-col { grid-template-columns: 1fr; }
+            .hero__title { font-size: 2.6rem; }
+        }
+
+        /* ── HIGHLIGHT BOX ───────────────────────────── */
+        .hbox {
+            padding: 1.2rem 1.4rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .hbox--c1 { background: rgba(124,106,247,0.07); border: 1px solid rgba(124,106,247,0.15); }
+        .hbox--c2 { background: rgba(245,166,35,0.07); border: 1px solid rgba(245,166,35,0.15); }
+        .hbox--c4 { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.15); }
+
+        .hbox p { font-size: 0.85rem; color: var(--gray-light); line-height: 1.7; }
+        .hbox strong { color: var(--white); }
+
+        /* ── FOOTER ──────────────────────────────────── */
+        .footer {
+            text-align: center;
+            padding: 3rem 0 4rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin-top: 4rem;
+            color: var(--gray);
+            font-size: 0.85rem;
+        }
+
+        .footer span { color: var(--c1); }
+
+        /* ── SCROLL REVEAL ───────────────────────────── */
+        .section {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.16,1,.3,1), border-color 0.3s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section:hover { transform: translateY(-3px) !important; }
+    </style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+<div class="grid-bg"></div>
+
+<div class="container">
+
+    <!-- HERO -->
+    <header class="hero">
+        <div class="hero__eyebrow">Universidad del Quindío · Construcción de Apps Móviles</div>
+        <h1 class="hero__title">
+            <span class="line-1">Kotlin &</span>
+            <span class="line-2">Jetpack Compose</span>
+        </h1>
+        <p class="hero__sub">Guía completa: desde las bases del lenguaje hasta composables, gestión de estado y el ciclo de vida de los elementos de la UI.</p>
+        <div class="hero__divider"></div>
+    </header>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <a href="#s1" data-c="1">1. Kotlin Básico</a>
+        <a href="#s2" data-c="2">2. Composables</a>
+        <a href="#s3" data-c="3">3. Estado & Recomposición</a>
+        <a href="#s4" data-c="4">4. Ciclo de Vida</a>
+        <a href="#s5" data-c="5">5. ViewModel & State Hoisting</a>
+        <a href="#s6" data-c="6">6. Formularios & Validación</a>
+    </nav>
+
+    <!-- SECTION 1 — KOTLIN BÁSICO -->
+    <section id="s1" class="section" data-c="1">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">1</div>
+                <h2 class="section__title">Kotlin — El Lenguaje Base</h2>
+            </div>
+
+            <p class="section__lead">Kotlin es un lenguaje moderno, estaticamente tipado, creado por JetBrains en 2010. Es el lenguaje oficial para Android, diseñado para ser más seguro, conciso y expresivo que Java, con null safety incorporado y soporte de primera clase para programación funcional.</p>
+
+            <div class="sub">
+                <div class="sub__title">Variables: val vs var</div>
+                <p style="color:var(--gray);font-size:.85rem;margin-bottom:.8rem;line-height:1.65;">
+                    Kotlin infiere tipos automáticamente. Usa <ic>val</ic> para inmutables (constantes) y <ic>var</ic> para mutables.
+                </p>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// val = inmutable (como final en Java)</span>
+<span class="kw">val</span> nombre: <span class="tp">String</span> = <span class="st">"Carlos"</span>
+<span class="kw">val</span> pi = <span class="nm">3.14</span>           <span class="cm">// tipo inferido: Double</span>
+
+<span class="cm">// var = mutable</span>
+<span class="kw">var</span> contador: <span class="tp">Int</span> = <span class="nm">0</span>
+contador = <span class="nm">5</span>             <span class="cm">// ✓ permitido
+
+// Null Safety: por defecto, nada puede ser null</span>
+<span class="kw">var</span> correo: <span class="tp">String</span>? = <span class="kw">null</span>   <span class="cm">// ? permite null</span>
+<span class="kw">val</span> longitud = correo?.<span class="fn">length</span> <span class="cm">// ?. safe call → null si correo es null</span>
+<span class="kw">val</span> len = correo?.<span class="fn">length</span> ?: <span class="nm">0</span> <span class="cm">// ?: Elvis → 0 si es null</span></code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Funciones</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// Función normal con retorno</span>
+<span class="kw">fun</span> <span class="fn">saludar</span>(nombre: <span class="tp">String</span>): <span class="tp">String</span> {
+    <span class="kw">return</span> <span class="st">"Hola, $nombre!"</span>    <span class="cm">// interpolación con $</span>
+}
+
+<span class="cm">// Función compacta (expresión)</span>
+<span class="kw">fun</span> <span class="fn">sumar</span>(a: <span class="tp">Int</span>, b: <span class="tp">Int</span>): <span class="tp">Int</span> = a + b
+
+<span class="cm">// Parámetros con valor por defecto</span>
+<span class="kw">fun</span> <span class="fn">concatenar</span>(nombre: <span class="tp">String</span> = <span class="st">"N/A"</span>, apellido: <span class="tp">String</span> = <span class="st">"N/A"</span>) =
+    <span class="st">"$nombre $apellido"</span>
+
+<span class="fn">concatenar</span>(<span class="st">"Ana"</span>)              <span class="cm">// "Ana N/A"</span>
+<span class="fn">concatenar</span>(apellido = <span class="st">"García"</span>) <span class="cm">// parámetro nombrado</span></code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Clases, Data Classes y Sealed Classes</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// Data class: genera equals, hashCode, toString, copy automáticamente</span>
+<span class="kw">data class</span> <span class="tp">Usuario</span>(<span class="kw">val</span> nombre: <span class="tp">String</span>, <span class="kw">val</span> edad: <span class="tp">Int</span>)
+
+<span class="kw">val</span> u1 = <span class="tp">Usuario</span>(<span class="st">"Ana"</span>, <span class="nm">25</span>)
+<span class="kw">val</span> u2 = u1.<span class="fn">copy</span>(edad = <span class="nm">26</span>)   <span class="cm">// copia con un campo distinto</span>
+<span class="kw">val</span> (nombre, edad) = u1        <span class="cm">// desestructuración</span>
+
+<span class="cm">// Sealed class: jerarquía cerrada de subtipos</span>
+<span class="kw">sealed class</span> <span class="tp">Resultado</span> {
+    <span class="kw">data class</span> <span class="tp">Exito</span>(<span class="kw">val</span> datos: <span class="tp">String</span>) : <span class="tp">Resultado</span>()
+    <span class="kw">data class</span> <span class="tp">Error</span>(<span class="kw">val</span> mensaje: <span class="tp">String</span>) : <span class="tp">Resultado</span>()
+    <span class="kw">object</span> <span class="tp">Cargando</span> : <span class="tp">Resultado</span>()
+}
+
+<span class="cm">// Uso con when (exhaustivo, sin else necesario)</span>
+<span class="kw">when</span>(resultado) {
+    <span class="kw">is</span> <span class="tp">Resultado.Exito</span>   -> <span class="fn">mostrar</span>(resultado.datos)
+    <span class="kw">is</span> <span class="tp">Resultado.Error</span>   -> <span class="fn">mostrarError</span>(resultado.mensaje)
+    <span class="kw">is</span> <span class="tp">Resultado.Cargando</span> -> <span class="fn">mostrarSpinner</span>()
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Colecciones y Lambdas</div>
+                <div class="two-col">
+                    <div class="code" style="margin:0"><span class="code__lang">kotlin</span><code><span class="cm">// Listas</span>
+<span class="kw">val</span> lista = <span class="fn">listOf</span>(<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>)
+<span class="kw">val</span> mutable = <span class="fn">mutableListOf</span><span class="tp">&lt;String&gt;</span>()
+mutable.<span class="fn">add</span>(<span class="st">"Kotlin"</span>)
+
+<span class="cm">// forEach con lambda</span>
+lista.<span class="fn">forEach</span> { item ->
+    <span class="fn">println</span>(item)
+}</code></div>
+                    <div class="code" style="margin:0"><span class="code__lang">kotlin</span><code><span class="cm">// Operaciones funcionales</span>
+<span class="kw">val</span> pares = lista.<span class="fn">filter</span> { it % <span class="nm">2</span> == <span class="nm">0</span> }
+<span class="kw">val</span> dobles = lista.<span class="fn">map</span> { it * <span class="nm">2</span> }
+<span class="kw">val</span> suma = lista.<span class="fn">reduce</span> { acc, i -> acc + i }
+
+<span class="cm">// groupBy</span>
+<span class="kw">val</span> grupos = lista.<span class="fn">groupBy</span> { it > <span class="nm">1</span> }</code></div>
+                </div>
+            </div>
+
+            <div class="cards">
+                <div class="card"><div class="card__icon">🔐</div><div><div class="card__ttl">Null Safety</div><div class="card__txt">El compilador obliga a manejar posibles nulos. Elimina NullPointerException en tiempo de compilación.</div></div></div>
+                <div class="card"><div class="card__icon">⚡</div><div><div class="card__ttl">Corrutinas</div><div class="card__txt">Código asíncrono sin callbacks. <ic>suspend fun</ic> + <ic>launch</ic> / <ic>async</ic> para tareas en background.</div></div></div>
+                <div class="card"><div class="card__icon">🔧</div><div><div class="card__ttl">Extensiones</div><div class="card__txt">Agrega funciones a clases existentes sin heredar: <ic>fun String.esPalindromo()</ic></div></div></div>
+                <div class="card"><div class="card__icon">🎯</div><div><div class="card__ttl">when expressions</div><div class="card__txt">El switch de Kotlin. Más potente: acepta rangos, tipos, múltiples valores y puede retornar un valor.</div></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2 — COMPOSABLES -->
+    <section id="s2" class="section" data-c="2">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">2</div>
+                <h2 class="section__title">Composables en Jetpack Compose</h2>
+            </div>
+
+            <p class="section__lead">Un composable es una función anotada con <ic>@Composable</ic> que describe cómo se ve una parte de la UI en función del estado actual. Jetpack Compose es declarativo: en lugar de manipular vistas, describes el resultado final y el framework se encarga de actualizar la pantalla.</p>
+
+            <div class="sub">
+                <div class="sub__title">Anatomía de un Composable</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">MiComposable</span>(           <span class="cm">// nombre en PascalCase</span>
+    titulo: <span class="tp">String</span>,           <span class="cm">// parámetros = datos de entrada</span>
+    modifier: <span class="tp">Modifier</span> = <span class="tp">Modifier</span>  <span class="cm">// Modifier siempre opcional</span>
+) {
+    Column(
+        modifier = modifier.<span class="fn">padding</span>(<span class="nm">16</span>.dp),
+        verticalArrangement = <span class="tp">Arrangement</span>.<span class="fn">spacedBy</span>(<span class="nm">8</span>.dp)
+    ) {
+        Text(
+            text = titulo,
+            style = <span class="tp">MaterialTheme</span>.typography.headlineMedium
+        )
+        Button(onClick = { <span class="cm">/* acción */</span> }) {
+            Text(<span class="st">"Acción"</span>)
+        }
+    }
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Composables Básicos</div>
+                <div class="tbl-wrap">
+                    <table>
+                        <tr><th>Composable</th><th>Descripción</th><th>Uso típico</th></tr>
+                        <tr><td>Text</td><td style="color:var(--gray-light)">Muestra texto en pantalla</td><td style="color:var(--gray)">Etiquetas, títulos, párrafos</td></tr>
+                        <tr><td>Button / OutlinedButton / TextButton</td><td style="color:var(--gray-light)">Botones interactivos</td><td style="color:var(--gray)">Acciones del usuario</td></tr>
+                        <tr><td>Column / Row</td><td style="color:var(--gray-light)">Disposición vertical / horizontal</td><td style="color:var(--gray)">Layouts</td></tr>
+                        <tr><td>Box</td><td style="color:var(--gray-light)">Apila elementos (Z-axis)</td><td style="color:var(--gray)">Superposiciones, badges</td></tr>
+                        <tr><td>TextField / OutlinedTextField</td><td style="color:var(--gray-light)">Entrada de texto</td><td style="color:var(--gray)">Formularios</td></tr>
+                        <tr><td>LazyColumn / LazyRow</td><td style="color:var(--gray-light)">Listas optimizadas</td><td style="color:var(--gray)">Listas largas de datos</td></tr>
+                        <tr><td>Scaffold</td><td style="color:var(--gray-light)">Estructura básica de pantalla</td><td style="color:var(--gray)">TopBar, FAB, SnackbarHost</td></tr>
+                        <tr><td>Image / Icon</td><td style="color:var(--gray-light)">Imágenes e iconos</td><td style="color:var(--gray)">Recursos visuales</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Modificadores (Modifier)</div>
+                <p style="color:var(--gray);font-size:.85rem;margin-bottom:.8rem;line-height:1.65;">
+                    Los modificadores son encadenables. <strong style="color:var(--white)">El orden importa</strong>: <ic>padding</ic> antes de <ic>background</ic> vs. después producen resultados distintos.
+                </p>
+                <div class="code"><span class="code__lang">kotlin</span><code>Text(
+    text = <span class="st">"Hola"</span>,
+    modifier = <span class="tp">Modifier</span>
+        .<span class="fn">fillMaxWidth</span>()        <span class="cm">// ocupa todo el ancho</span>
+        .<span class="fn">background</span>(<span class="tp">Color</span>.Blue) <span class="cm">// fondo azul (incluye padding)</span>
+        .<span class="fn">padding</span>(<span class="nm">16</span>.dp)         <span class="cm">// padding DENTRO del fondo</span>
+        .<span class="fn">clickable</span> { <span class="cm">/* tap */</span> }  <span class="cm">// tappable</span>
+)</code></div>
+            </div>
+
+            <div class="callout callout--info">
+                <span class="callout__ico">💡</span>
+                <span>Siempre pasa el parámetro <ic>modifier</ic> al composable raíz. Esto permite al código que llama al composable controlar su tamaño y posición desde afuera, haciendo el componente reutilizable.</span>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Preview sin ejecutar la app</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="an">@Preview</span>(showBackground = <span class="kw">true</span>, name = <span class="st">"Mi composable"</span>)
+<span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">MiComposablePreview</span>() {
+    <span class="tp">MyAppTheme</span> {
+        <span class="fn">MiComposable</span>(titulo = <span class="st">"Vista previa"</span>)
+    }
+}</code></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3 — ESTADO Y RECOMPOSICIÓN -->
+    <section id="s3" class="section" data-c="3">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">3</div>
+                <h2 class="section__title">Estado & Recomposición</h2>
+            </div>
+
+            <p class="section__lead">La recomposición es el mecanismo central de Jetpack Compose: cuando el estado observable cambia, Compose vuelve a ejecutar solo los composables afectados para actualizar la UI automáticamente. Comprender cómo funciona el estado es fundamental para construir apps correctas y eficientes.</p>
+
+            <div class="sub">
+                <div class="sub__title">remember + mutableStateOf</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">Contador</span>() {
+    <span class="cm">// remember → sobrevive recomposiciones (no cambios de config)</span>
+    <span class="cm">// mutableStateOf → Compose observa cambios y recompone</span>
+    <span class="kw">var</span> count <span class="kw">by</span> <span class="fn">remember</span> { <span class="fn">mutableIntStateOf</span>(<span class="nm">0</span>) }
+
+    <span class="tp">Column</span>(horizontalAlignment = <span class="tp">Alignment</span>.CenterHorizontally) {
+        <span class="tp">Text</span>(text = <span class="st">"Contador: $count"</span>)
+        <span class="tp">Button</span>(onClick = { count++ }) {
+            <span class="tp">Text</span>(<span class="st">"Incrementar"</span>)
+        }
+    }
+    <span class="cm">// Al hacer clic, count cambia → Compose detecta → recompone Contador</span>
+}</code></div>
+            </div>
+
+            <div class="callout callout--warn">
+                <span class="callout__ico">⚠️</span>
+                <span><strong>Sin remember</strong>, la variable se reinicializa a su valor inicial en cada recomposición, perdiendo el estado del usuario. <ic>remember</ic> le dice a Compose que conserve ese valor entre recomposiciones.</span>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Tipos de estado observable</div>
+                <div class="tbl-wrap">
+                    <table>
+                        <tr><th>Función</th><th>Para</th><th>Delegado by</th></tr>
+                        <tr><td>mutableStateOf()</td><td style="color:var(--gray-light)">Cualquier tipo genérico</td><td style="color:var(--gray)">✓ sí</td></tr>
+                        <tr><td>mutableIntStateOf()</td><td style="color:var(--gray-light)">Int (optimizado)</td><td style="color:var(--gray)">✓ sí</td></tr>
+                        <tr><td>mutableFloatStateOf()</td><td style="color:var(--gray-light)">Float (optimizado)</td><td style="color:var(--gray)">✓ sí</td></tr>
+                        <tr><td>mutableStateListOf()</td><td style="color:var(--gray-light)">Listas observables</td><td style="color:var(--gray)">✗ no</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">¿Cómo funciona la recomposición?</div>
+                <div class="hbox hbox--c1">
+                    <p>Compose solo recompone los composables que leen el estado que cambió. Si <ic>Contador</ic> contiene también un <ic>Header</ic> que no usa <ic>count</ic>, el <ic>Header</ic> <strong>no se recompone</strong>. Esto hace la UI muy eficiente.</p>
+                </div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">StateFlow para flujo de datos reactivos</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// En el ViewModel (fuente de verdad)</span>
+<span class="kw">private val</span> _resultado = <span class="tp">MutableStateFlow</span>&lt;<span class="tp">String?</span>&gt;(<span class="kw">null</span>)
+<span class="kw">val</span> resultado: <span class="tp">StateFlow</span>&lt;<span class="tp">String?</span>&gt; = _resultado.<span class="fn">asStateFlow</span>()
+
+<span class="cm">// En el Composable (observa cambios reactivamente)</span>
+<span class="kw">val</span> resultado <span class="kw">by</span> viewModel.resultado.<span class="fn">collectAsState</span>()
+<span class="cm">// Cada vez que el ViewModel actualiza _resultado, el composable se recompone</span></code></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4 — CICLO DE VIDA -->
+    <section id="s4" class="section" data-c="4">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">4</div>
+                <h2 class="section__title">Ciclo de Vida de los Composables</h2>
+            </div>
+
+            <p class="section__lead">A diferencia de las Activities o Fragments de Android, los composables tienen un ciclo de vida más simple y centrado en el árbol de composición. Existen tres momentos clave: entrada, recomposición y salida. Para efectos secundarios (side-effects) existen funciones específicas alineadas con este ciclo.</p>
+
+            <div class="sub">
+                <div class="sub__title">Las tres fases del ciclo de vida</div>
+
+                <div class="lifecycle">
+                    <div class="lc-box lc-box--enter">Enter Composition</div>
+                    <div class="lc-arrow">
+                        <div class="lc-arrow-line"></div>
+                        <div class="lc-label">composable aparece en pantalla</div>
+                        <div class="lc-arrow-head"></div>
+                    </div>
+                    <div class="lc-box lc-box--compose">Composing (activo)</div>
+                    <div class="lc-arrow">
+                        <div class="lc-arrow-line"></div>
+                        <div class="lc-label">el estado cambia</div>
+                        <div class="lc-arrow-head"></div>
+                    </div>
+                    <div class="lc-box lc-box--recompose">Recomposition</div>
+                    <div class="lc-arrow">
+                        <div class="lc-arrow-line"></div>
+                        <div class="lc-label">composable desaparece</div>
+                        <div class="lc-arrow-head"></div>
+                    </div>
+                    <div class="lc-box lc-box--dispose">Leave Composition</div>
+                </div>
+
+                <div class="callout callout--info">
+                    <span class="callout__ico">🔄</span>
+                    <span>Un composable puede recomponerse <strong>múltiples veces</strong> mientras está activo. Las recomposiciones son baratas porque Compose saltea composables no afectados.</span>
+                </div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Side-Effects: LaunchedEffect, DisposableEffect, SideEffect</div>
+                <p style="color:var(--gray);font-size:.85rem;margin-bottom:1rem;line-height:1.65;">
+                    Los side-effects son operaciones que deben ejecutarse en sincronía con el ciclo de vida del composable pero fuera del flujo de composición normal (llamadas de red, animaciones, limpieza de recursos).
+                </p>
+
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// LaunchedEffect: corre una corrutina cuando cambia la key
+// Se cancela y relanza si la key cambia. Se cancela al salir de composición.</span>
+<span class="fn">LaunchedEffect</span>(userId) {           <span class="cm">// key = userId</span>
+    <span class="kw">val</span> datos = api.<span class="fn">obtenerUsuario</span>(userId)
+    _estado.<span class="fn">emit</span>(datos)
+}
+
+<span class="cm">// DisposableEffect: limpieza al salir de composición (como listeners, suscripciones)</span>
+<span class="fn">DisposableEffect</span>(<span class="tp">Unit</span>) {
+    <span class="kw">val</span> listener = <span class="tp">SensorListener</span> { <span class="cm">/* ... */</span> }
+    sensorManager.<span class="fn">register</span>(listener)
+    <span class="fn">onDispose</span> {
+        sensorManager.<span class="fn">unregister</span>(listener)  <span class="cm">// se ejecuta al salir</span>
+    }
+}
+
+<span class="cm">// SideEffect: código no-composable que debe sincronizarse en cada recomposición exitosa</span>
+<span class="fn">SideEffect</span> {
+    analytics.<span class="fn">logScreen</span>(screenName) <span class="cm">// se ejecuta tras cada recomposición</span>
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">rememberUpdatedRef vs remember</div>
+                <div class="tbl-wrap">
+                    <table>
+                        <tr><th>Función</th><th>Sobrevive recomposición</th><th>Sobrevive cambio de config</th><th>Uso</th></tr>
+                        <tr><td>remember {}</td><td style="color:var(--c5)">✓ Sí</td><td style="color:var(--c4)">✗ No</td><td style="color:var(--gray)">Estado local al composable</td></tr>
+                        <tr><td>rememberSaveable {}</td><td style="color:var(--c5)">✓ Sí</td><td style="color:var(--c5)">✓ Sí</td><td style="color:var(--gray)">Estado que sobrevive rotación</td></tr>
+                        <tr><td>ViewModel</td><td style="color:var(--c5)">✓ Sí</td><td style="color:var(--c5)">✓ Sí</td><td style="color:var(--gray)">Estado de pantalla completo</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="callout callout--warn">
+                <span class="callout__ico">⚠️</span>
+                <span><strong>remember no sobrevive a cambios de configuración</strong> (como rotar la pantalla). Para preservar el estado ante rotaciones, usa <ic>rememberSaveable</ic> o delega el estado a un <ic>ViewModel</ic>.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5 — VIEWMODEL & STATE HOISTING -->
+    <section id="s5" class="section" data-c="5">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">5</div>
+                <h2 class="section__title">ViewModel & State Hoisting</h2>
+            </div>
+
+            <p class="section__lead">El <strong>State Hoisting</strong> (elevar el estado) es el patrón de mover el estado fuera de los composables y hacia arriba en la jerarquía. El ViewModel es el lugar natural para el estado de una pantalla completa, ya que sobrevive rotaciones y mantiene el estado de ciclo de vida de Android.</p>
+
+            <div class="sub">
+                <div class="sub__title">Principio de State Hoisting</div>
+                <div class="hbox hbox--c1">
+                    <p>Un composable debe ser <strong>"tonto"</strong> (stateless): recibe datos y funciones como parámetros, sin gestionar estado internamente. Esto lo hace más reutilizable, testeable y predecible.</p>
+                </div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// ❌ Composable con estado interno → difícil de reutilizar/testear</span>
+<span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">BotonContador</span>() {
+    <span class="kw">var</span> count <span class="kw">by</span> <span class="fn">remember</span> { <span class="fn">mutableIntStateOf</span>(<span class="nm">0</span>) }
+    <span class="tp">Button</span>(onClick = { count++ }) { <span class="tp">Text</span>(<span class="st">"$count"</span>) }
+}
+
+<span class="cm">// ✓ Composable stateless con estado elevado (hoisted)</span>
+<span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">BotonContador</span>(
+    count: <span class="tp">Int</span>,                    <span class="cm">// estado bajando</span>
+    onIncrement: () -> <span class="tp">Unit</span>       <span class="cm">// eventos subiendo</span>
+) {
+    <span class="tp">Button</span>(onClick = onIncrement) { <span class="tp">Text</span>(<span class="st">"$count"</span>) }
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">ViewModel: fuente de verdad de la pantalla</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="kw">class</span> <span class="tp">LoginViewModel</span> : <span class="tp">ViewModel</span>() {
+
+    <span class="cm">// Estado observable con mutableStateOf (Compose lo observa directamente)</span>
+    <span class="kw">var</span> email <span class="kw">by</span> <span class="fn">mutableStateOf</span>(<span class="st">""</span>)
+        <span class="kw">private set</span>                      <span class="cm">// solo el ViewModel puede modificarlo</span>
+
+    <span class="kw">var</span> password <span class="kw">by</span> <span class="fn">mutableStateOf</span>(<span class="st">""</span>)
+        <span class="kw">private set</span>
+
+    <span class="cm">// StateFlow para resultados asincrónicos</span>
+    <span class="kw">private val</span> _loginResult = <span class="tp">MutableStateFlow</span>&lt;<span class="tp">Resultado?</span>&gt;(<span class="kw">null</span>)
+    <span class="kw">val</span> loginResult = _loginResult.<span class="fn">asStateFlow</span>()
+
+    <span class="kw">fun</span> <span class="fn">onEmailChange</span>(new: <span class="tp">String</span>) { email = new }
+    <span class="kw">fun</span> <span class="fn">onPasswordChange</span>(new: <span class="tp">String</span>) { password = new }
+
+    <span class="kw">fun</span> <span class="fn">login</span>() {
+        viewModelScope.<span class="fn">launch</span> {               <span class="cm">// corrutina del ViewModel</span>
+            _loginResult.value = repo.<span class="fn">login</span>(email, password)
+        }
+    }
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Patrón ValidatedField reutilizable</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="cm">// Encapsula valor + error + lógica de validación en un objeto reutilizable</span>
+<span class="kw">class</span> <span class="tp">ValidatedField</span>&lt;<span class="tp">T</span>&gt;(
+    <span class="kw">private val</span> initialValue: <span class="tp">T</span>,
+    <span class="kw">private val</span> validate: (<span class="tp">T</span>) -> <span class="tp">String</span>?     <span class="cm">// función de validación</span>
+) {
+    <span class="kw">var</span> value <span class="kw">by</span> <span class="fn">mutableStateOf</span>(initialValue)
+        <span class="kw">private set</span>
+    <span class="kw">var</span> showError <span class="kw">by</span> <span class="fn">mutableStateOf</span>(<span class="kw">false</span>)
+        <span class="kw">private set</span>
+
+    <span class="kw">val</span> error: <span class="tp">String</span>? <span class="kw">get</span>() = <span class="kw">if</span> (showError) <span class="fn">validate</span>(value) <span class="kw">else null</span>
+    <span class="kw">val</span> isValid: <span class="tp">Boolean</span> <span class="kw">get</span>() = <span class="fn">validate</span>(value) == <span class="kw">null</span>
+
+    <span class="kw">fun</span> <span class="fn">onChange</span>(new: <span class="tp">T</span>) { value = new; showError = <span class="kw">true</span> }
+    <span class="kw">fun</span> <span class="fn">reset</span>()            { value = initialValue; showError = <span class="kw">false</span> }
+}
+
+<span class="cm">// Uso en ViewModel:</span>
+<span class="kw">val</span> email = <span class="tp">ValidatedField</span>(<span class="st">""</span>) { v ->
+    <span class="kw">when</span> {
+        v.<span class="fn">isEmpty</span>() -> <span class="st">"Requerido"</span>
+        !<span class="tp">Patterns</span>.<span class="tp">EMAIL_ADDRESS</span>.<span class="fn">matcher</span>(v).<span class="fn">matches</span>() -> <span class="st">"Email inválido"</span>
+        <span class="kw">else</span> -> <span class="kw">null</span>
+    }
+}</code></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6 — FORMULARIOS -->
+    <section id="s6" class="section" data-c="6">
+        <div class="section__stripe"></div>
+        <div class="section__inner">
+            <div class="section__header">
+                <div class="section__num">6</div>
+                <h2 class="section__title">Formularios, Validación & Scaffold</h2>
+            </div>
+
+            <p class="section__lead">Los formularios en Jetpack Compose combinan todos los conceptos anteriores: estado elevado en un ViewModel, campos observables con validación reactiva y componentes como Scaffold + Snackbar para dar retroalimentación al usuario de forma elegante.</p>
+
+            <div class="sub">
+                <div class="sub__title">LoginScreen completo con ViewModel</div>
+                <div class="code"><span class="code__lang">kotlin</span><code><span class="an">@Composable</span>
+<span class="kw">fun</span> <span class="fn">LoginScreen</span>(
+    onNavigate: () -> <span class="tp">Unit</span>,
+    viewModel: <span class="tp">LoginViewModel</span> = <span class="fn">viewModel</span>()   <span class="cm">// crea o recupera el VM</span>
+) {
+    <span class="kw">val</span> snackbarState = <span class="fn">remember</span> { <span class="tp">SnackbarHostState</span>() }
+    <span class="kw">val</span> loginResult <span class="kw">by</span> viewModel.loginResult.<span class="fn">collectAsState</span>()
+
+    <span class="cm">// Reaccionar al resultado del login</span>
+    <span class="fn">LaunchedEffect</span>(loginResult) {
+        loginResult?.<span class="kw">let</span> { result ->
+            <span class="kw">val</span> msg = <span class="kw">when</span>(result) {
+                <span class="kw">is</span> <span class="tp">Resultado.Exito</span> -> result.mensaje
+                <span class="kw">is</span> <span class="tp">Resultado.Error</span> -> result.error
+            }
+            snackbarState.<span class="fn">showSnackbar</span>(msg)
+            <span class="kw">if</span> (result <span class="kw">is</span> <span class="tp">Resultado.Exito</span>) { <span class="fn">delay</span>(<span class="nm">1000</span>); <span class="fn">onNavigate</span>() }
+            viewModel.<span class="fn">resetLoginResult</span>()
+        }
+    }
+
+    <span class="tp">Scaffold</span>(
+        snackbarHost = {
+            <span class="tp">SnackbarHost</span>(snackbarState) { data ->
+                <span class="tp">Snackbar</span>(
+                    containerColor = <span class="kw">if</span>(loginResult <span class="kw">is</span> <span class="tp">Resultado.Error</span>)
+                        <span class="tp">MaterialTheme</span>.colorScheme.error
+                    <span class="kw">else</span> <span class="tp">MaterialTheme</span>.colorScheme.primary
+                ) { <span class="tp">Text</span>(data.visuals.message) }
+            }
+        }
+    ) { padding ->
+        <span class="tp">Column</span>(modifier = <span class="tp">Modifier</span>.<span class="fn">padding</span>(padding).<span class="fn">fillMaxSize</span>(),
+               verticalArrangement = <span class="tp">Arrangement</span>.<span class="fn">Center</span>) {
+
+            <span class="tp">OutlinedTextField</span>(
+                value = viewModel.email.value,
+                onValueChange = { viewModel.email.<span class="fn">onChange</span>(it) },
+                label = { <span class="tp">Text</span>(<span class="st">"Email"</span>) },
+                isError = viewModel.email.error != <span class="kw">null</span>,
+                supportingText = viewModel.email.error?.<span class="kw">let</span> { e -> { <span class="tp">Text</span>(e) } },
+                keyboardOptions = <span class="tp">KeyboardOptions</span>(keyboardType = <span class="tp">KeyboardType</span>.Email)
+            )
+            <span class="tp">Button</span>(
+                onClick = { viewModel.<span class="fn">login</span>() },
+                enabled = viewModel.isFormValid
+            ) { <span class="tp">Text</span>(<span class="st">"Iniciar Sesión"</span>) }
+        }
+    }
+}</code></div>
+            </div>
+
+            <div class="sub">
+                <div class="sub__title">Arquitectura recomendada del proyecto</div>
+                <div class="code"><span class="code__lang">estructura</span><code>com.example.app/
+├── core/
+│   ├── components/          <span class="cm"># Composables reutilizables en toda la app</span>
+│   ├── navigation/          <span class="cm"># Grafo de navegación</span>
+│   ├── theme/               <span class="cm"># Color.kt, Theme.kt, Type.kt</span>
+│   └── utils/
+│       └── ValidatedField.kt
+├── features/
+│   ├── login/
+│   │   ├── LoginScreen.kt   <span class="cm"># Solo UI (Composable)</span>
+│   │   └── LoginViewModel.kt  <span class="cm"># Estado + lógica</span>
+│   └── register/
+└── MainActivity.kt</code></div>
+            </div>
+
+            <div class="cards">
+                <div class="card"><div class="card__icon">🧩</div><div><div class="card__ttl">Separación de capas</div><div class="card__txt">Composable = UI pura. ViewModel = estado + lógica. Repository = datos.</div></div></div>
+                <div class="card"><div class="card__icon">🔁</div><div><div class="card__ttl">StateFlow vs mutableStateOf</div><div class="card__txt"><ic>mutableStateOf</ic> para estado de UI simple. <ic>StateFlow</ic> para resultados asincrónicos y flujos de datos.</div></div></div>
+                <div class="card"><div class="card__icon">🛡️</div><div><div class="card__ttl">Validación reactiva</div><div class="card__txt">Los errores solo aparecen cuando el usuario interactúa, mejorando la UX.</div></div></div>
+                <div class="card"><div class="card__icon">🔔</div><div><div class="card__ttl">Snackbar con Scaffold</div><div class="card__txt">Usa <ic>SnackbarHostState</ic> y <ic>LaunchedEffect</ic> para mensajes no bloqueantes.</div></div></div>
+            </div>
+
+            <div class="callout callout--tip">
+                <span class="callout__ico">🎯</span>
+                <span>La regla de oro: <strong>el estado desciende, los eventos suben</strong>. Los composables reciben datos (estado) desde arriba y emiten acciones hacia arriba mediante lambdas. Nunca al revés.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p class="footer__text">Guía elaborada con base en el material de <span>Carlos Andrés Florez</span> · Universidad del Quindío · Ingeniería de Sistemas</p>
+    </footer>
+
+</div>
+
+<script>
+    // Scroll reveal
+    const sections = document.querySelectorAll('.section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                observer.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.07 });
+    sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
